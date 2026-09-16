@@ -3,8 +3,6 @@ import { Input } from "./_components/ui/input"
 import Header from "./_components/ui/header"
 import { Button } from "./_components/ui/button"
 import { SearchIcon } from "lucide-react"
-import { Card, CardContent } from "./_components/ui/card"
-
 import { db } from "./_lib/prisma"
 import BarbershopItem from "./_components/ui/barbershop-item"
 import { quickSearchOptions } from "./_constants/search"
@@ -80,15 +78,6 @@ const Home = async () => {
           ))}
         </div>
       </div>
-      <footer>
-        <Card>
-          <CardContent className="px-5 py-6">
-            <p className="text-sm text-gray-400">
-              © 2026 Copyright <span className="font-bold">FSW Barber</span>
-            </p>
-          </CardContent>
-        </Card>
-      </footer>
     </div>
   )
 }
