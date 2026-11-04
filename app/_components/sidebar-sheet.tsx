@@ -14,7 +14,6 @@ import SignInDialog from "./sign-in-dialog"
 const SidebarSheet = () => {
   const { data } = useSession()
   const handleLogoutClick = () => signOut()
-  console.log(data?.user)
 
   return (
     <SheetContent className="overflow-y-auto">
