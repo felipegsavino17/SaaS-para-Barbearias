@@ -7,8 +7,11 @@ import { quickSearchOptions } from "./_constants/search"
 import BookingItem from "./_components/booking-item"
 import Search from "./_components/search"
 import Link from "next/link"
+import { getServerSession } from "next-auth"
+import { authOptions } from "./_lib/auth"
 
 const Home = async () => {
+  const session = await getServerSession(authOptions)
   // chamar meu banco de dados
   const barbershops = await db.barbershop.findMany({})
   const popularBarbershops = await db.barbershop.findMany({
@@ -16,6 +19,26 @@ const Home = async () => {
       name: "desc",
     },
   })
+  const confirmedBookings = session?.user
+    ? await db.booking.findMany({
+        where: {
+          userId: (session.user as any).id,
+          date: {
+            gte: new Date(),
+          },
+        },
+        include: {
+          service: {
+            include: {
+              barbershop: true,
+            },
+          },
+        },
+        orderBy: {
+          date: "asc",
+        },
+      })
+    : []
   return (
     <div>
       {/* header */}
@@ -62,20 +85,32 @@ const Home = async () => {
             className="h-auto w-full rounded-xl"
           />
         </div>
+
+        <h2 className="mb-3 mt-6 text-xs font-bold uppercase text-gray-400">
+          Agendamentos
+        </h2>
+
         {/* AGENDAMENTO */}
-        <BookingItem />
+        <div className="flex gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+          {confirmedBookings.map((booking) => (
+            <BookingItem key={booking.id} booking={booking} />
+          ))}
+        </div>
 
         <h2 className="mb-3 mt-6 text-xs font-bold uppercase text-gray-400">
           Recomendados
         </h2>
+
         <div className="flex gap-4 overflow-auto [&::-webkit-scrollbar]:hidden">
           {barbershops.map((barbershop) => (
             <BarbershopItem key={barbershop.id} barbershop={barbershop} />
           ))}
         </div>
+
         <h2 className="mb-3 mt-6 text-xs font-bold uppercase text-gray-400">
           Populares
         </h2>
+
         <div className="flex gap-4 overflow-auto [&::-webkit-scrollbar]:hidden">
           {popularBarbershops.map((barbershop) => (
             <BarbershopItem key={barbershop.id} barbershop={barbershop} />
