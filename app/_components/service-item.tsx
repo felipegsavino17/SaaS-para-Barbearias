@@ -17,8 +17,8 @@ import {
 } from "./ui/sheet"
 import { Calendar } from "./ui/calendar"
 import { ptBR } from "date-fns/locale"
-import { useEffect, useState } from "react"
-import { addDays, format, set } from "date-fns"
+import { useEffect, useMemo, useState } from "react"
+import { format, isPast, isToday, set, startOfToday } from "date-fns"
 import { toast } from "sonner"
 import { createBooking } from "../_actions/create-booking"
 import { useSession } from "next-auth/react"
@@ -45,10 +45,21 @@ const TIME_LIST = [
   "18:00",
 ]
 
-const getTimeList = (bookings: Booking[]) => {
+interface GetTimeListProps {
+  bookings: Booking[]
+  selectedDay: Date
+}
+
+const getTimeList = ({ bookings, selectedDay }: GetTimeListProps) => {
   return TIME_LIST.filter((time) => {
     const hour = Number(time.split(":")[0])
     const minutes = Number(time.split(":")[1])
+
+    const timeIsOnThePast = isPast(set(new Date(), { hours: hour, minutes }))
+
+    if (timeIsOnThePast && isToday(selectedDay)) {
+      return false
+    }
 
     const hasBookingOnCurrentTime = bookings.some(
       (booking) =>
@@ -59,6 +70,7 @@ const getTimeList = (bookings: Booking[]) => {
     if (hasBookingOnCurrentTime) {
       return false
     }
+
     return true
   })
 }
@@ -71,18 +83,21 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
     undefined,
   )
 
-  const [daybookings, setDayBookings] = useState<Booking[]>([])
+  const [dayBookings, setDayBookings] = useState<Booking[]>([])
   const [bookingSheetIsOpen, setBookingSheetIsOpen] = useState(false)
 
   useEffect(() => {
     const fetch = async () => {
       if (!selectedDay) return
+
       const bookings = await getBookings({
         date: selectedDay,
         serviceId: service.id,
       })
+
       setDayBookings(bookings)
     }
+
     console.log("useEffect")
     fetch()
   }, [selectedDay, service.id])
@@ -91,6 +106,7 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
     if (data?.user) {
       return setBookingSheetIsOpen(true)
     }
+
     return setSignInDialogIsOpen(true)
   }
 
@@ -121,6 +137,7 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
         minutes: minute,
         hours: hour,
       })
+
       console.log("DADOS DA SESSÃO:", data)
       console.log("ID DO USUÁRIO:", (data?.user as any)?.id)
 
@@ -128,6 +145,7 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
         serviceId: service.id,
         date: newDate,
       })
+
       handleBookingSheetOpenChange()
       toast.success("Reserva criada com sucesso!")
     } catch (error) {
@@ -135,6 +153,15 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
       toast.error("Erro ao criar reserva!")
     }
   }
+
+  const timeList = useMemo(() => {
+    if (!selectedDay) return []
+
+    return getTimeList({
+      bookings: dayBookings,
+      selectedDay,
+    })
+  }, [dayBookings, selectedDay])
 
   return (
     <>
@@ -185,7 +212,7 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
                         locale={ptBR}
                         selected={selectedDay}
                         onSelect={handleDateSelect}
-                        disabled={{ before: addDays(new Date(), 1) }}
+                        disabled={{ before: startOfToday() }}
                         styles={{
                           weekday: {
                             width: "100%",
@@ -214,19 +241,25 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
 
                     {selectedDay && (
                       <div className="flex shrink-0 gap-2 overflow-x-auto border-b border-solid p-3 [&::-webkit-scrollbar]:hidden">
-                        {getTimeList(daybookings).map((time) => (
-                          <Button
-                            key={time}
-                            variant={
-                              selectedTime === time ? "default" : "outline"
-                            }
-                            className="shrink-0 rounded-full"
-                            size="sm"
-                            onClick={() => handleTimeSelect(time)}
-                          >
-                            {time}
-                          </Button>
-                        ))}
+                        {timeList.length > 0 ? (
+                          timeList.map((time) => (
+                            <Button
+                              key={time}
+                              variant={
+                                selectedTime === time ? "default" : "outline"
+                              }
+                              className="shrink-0 rounded-full"
+                              size="sm"
+                              onClick={() => handleTimeSelect(time)}
+                            >
+                              {time}
+                            </Button>
+                          ))
+                        ) : (
+                          <p className="text-xs">
+                            Não há horários disponíveis para esta data.
+                          </p>
+                        )}
                       </div>
                     )}
 
