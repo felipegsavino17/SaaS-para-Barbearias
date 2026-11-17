@@ -31,6 +31,7 @@ import {
 import { deleteBooking } from "../_actions/delete-booking"
 import { toast } from "sonner"
 import { useState } from "react"
+import BookingSummary from "./booking-summary"
 
 interface BookingItemProps {
   booking: Prisma.BookingGetPayload<{
@@ -126,42 +127,14 @@ const BookingItem = ({ booking }: BookingItemProps) => {
             {isConfirmed ? "Confirmado" : "Finalizado"}
           </Badge>
 
-          <Card className="mb-6 mt-3">
-            <CardContent className="space-y-3 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-bold">{booking.service.name}</h2>
-                <p className="shrink-0 text-sm font-bold">
-                  {Intl.NumberFormat("pt-BR", {
-                    style: "currency",
-                    currency: "BRL",
-                  }).format(Number(booking.service.price))}
-                </p>
-              </div>
+          <div className="mb-3 mt-6">
+            <BookingSummary
+              barbershop={barbershop}
+              service={booking.service}
+              selectedDate={booking.date}
+            />
+          </div>
 
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm text-gray-400">Data</h2>
-                <p className="text-right text-sm">
-                  {format(booking.date, "dd 'de' MMMM", {
-                    locale: ptBR,
-                  })}{" "}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm text-gray-400">Horário</h2>
-                <p className="text-sm">
-                  {format(booking.date, "HH:mm", {
-                    locale: ptBR,
-                  })}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm text-gray-400">Barbearia</h2>
-                <p className="text-right text-sm">{barbershop.name}</p>
-              </div>
-            </CardContent>
-          </Card>
           <div className="space-y-3">
             {barbershop.phones.map((phone, index) => (
               <PhoneItem key={index} phone={phone} />
